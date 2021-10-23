@@ -1,2 +1,2 @@
-# night-light
-Simple powershell script for changing Windows Night light settings
+# Night-Night
+Simple PowerShell script for changing Windows Night light settings

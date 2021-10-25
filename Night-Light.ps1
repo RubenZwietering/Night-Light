@@ -314,7 +314,7 @@ function Set-settings
 	{
 		if ($settings.StartTime.Hours -ne 0)
 		{
-			$settings.Data = $settings.Data[0..($i-1)] + (0x2E, [byte]$settings.StartTime.Hours) + $settings.Data[$i..$settings.Data.length]
+			$settings.Data = $settings.Data[0..($i-1)] + (0x0E, [byte]$settings.StartTime.Hours) + $settings.Data[$i..$settings.Data.length]
 			$i += 2
 		}
 	}
@@ -363,7 +363,7 @@ function Set-settings
 	{
 		if ($settings.EndTime.Hours -ne 0)
 		{
-			$settings.Data = $settings.Data[0..($i-1)] + (0x2E, [byte]$settings.EndTime.Hours) + $settings.Data[$i..$settings.Data.length]
+			$settings.Data = $settings.Data[0..($i-1)] + (0x0E, [byte]$settings.EndTime.Hours) + $settings.Data[$i..$settings.Data.length]
 			$i += 2
 		}
 	}
@@ -402,6 +402,15 @@ function Set-settings
 
 	# 10 remaining unknown bytes
 	# $i += 10
+
+	for ($i = 10; $i -lt 15; $i++)
+	{
+		if ($settings.Data[$i] -ne 0xff)
+		{
+			$settings.Data[$i]++
+			break
+		}
+	}
 
 	Set-ItemProperty -Path $settingsKey -Name $valueName -Value $settings.Data
 }
@@ -453,7 +462,7 @@ if ($SetSchedule -ne $null -or $SetStartTime -ne $null -or $SetEndTime -ne $null
 	Set-Settings $settings
 }
 
-if ($GetSate -or $GetSettings)
+if ($GetState -or $GetSettings)
 {
 	$data = Get-ItemPropertyValue -Path $stateKey -Name $valueName
 
@@ -471,11 +480,21 @@ if ($GetSate -or $GetSettings)
 	}
 
 	[console]::WriteLine("State: ${state}")
+
+	# for ($i = 0; $i -lt $data.length; $i++)
+	# {
+	# 	[console]::WriteLine("data[{0}]: {1:X2}", $i, $data[$i])
+	# }
 }
 
 if ($GetSettings -or $GetSchedule -or $GetStartTime -or $GetStartTime -or $GetEndTime -or $GetTemperature -or $GetStrength)
 {
 	$settings = Get-settings
+
+	for ($i = 0; $i -lt $settings.Data.length; $i++)
+	{
+		[console]::WriteLine("data[{0}]: {1:X2}", $i, $settings.Data[$i])
+	}
 
 	if ($GetSchedule -or $GetSettings)
 	{

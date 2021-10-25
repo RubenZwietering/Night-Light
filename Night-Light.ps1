@@ -89,8 +89,100 @@ param(
 # [console]::WriteLine("Strength: ${SetStrength}")
 # [console]::WriteLine("")
 
-$stateKey = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\default$windows.data.bluelightreduction.bluelightreductionstate\windows.data.bluelightreduction.bluelightreductionstate\'
 $valueName = 'Data'
+
+$stateKey = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\default$windows.data.bluelightreduction.bluelightreductionstate\windows.data.bluelightreduction.bluelightreductionstate\'
+
+class State
+{
+	[byte[]]$Data
+	[string]$State
+}
+
+function Get-State
+{
+	$state = [State]::new()
+
+	#[Microsoft.Win32.RegistryKey]::Open
+	
+	$state.Data = Get-ItemPropertyValue -Path $stateKey -Name $valueName
+
+	if ($state.Data[18] -eq 0x15)
+	{
+		$state.State = "On"
+	}
+	elseif ($state.Data[18] -eq 0x13)
+	{
+		$state.State = "Off"
+	}
+	else
+	{
+		$state.State = "Invalid"
+	}
+	
+	return $state
+}
+
+function Set-State
+{
+	param(
+		[Parameter(Mandatory)]
+		[State]
+		$state
+		)
+
+	if ($state.State -eq $null -or $state.State -eq "Toggle")
+	{
+		if ($state.Data[18] -eq 0x15)
+		{
+			$state.State = "Off"
+		}
+		elseif ($state.Data[18] -eq 0x13)
+		{
+			$state.State = "On"
+		}
+		else
+		{
+			$data_18_ = $state.Data[18]
+			throw "Invalid State (${data_18_})"
+		}
+	}
+
+	if ($state.State -eq "On")
+	{
+		if ($state.Data[18] -eq 0x13)
+		{
+			$state.Data = $state.Data[0..22] + (0x10, 0x00) + $state.Data[23..$state.Data.length] # 41
+		}
+
+		$state.Data[18] = 0x15
+	}
+	elseif ($state.State -eq "Off")
+	{
+		if ($state.Data[18] -eq 0x15)
+		{
+			$state.Data = $state.Data[0..22] + $state.Data[25..$state.Data.length] # 43
+		}
+
+		$state.Data[18] = 0x13
+	}
+	else
+	{
+		$state_State = $state.State
+		throw "Invalid State (${state_State})"
+	}
+
+	for ($i = 10; $i -lt 15; $i++)
+	{
+		if ($state.Data[$i] -ne 0xff)
+		{
+			$state.Data[$i]++
+			break
+		}
+	}
+	
+	Set-ItemProperty -Path $stateKey -Name $valueName -Value $state.Data
+}
 
 # fast path
 if (
@@ -112,47 +204,11 @@ if (
 	-not $OpenSettings
 )
 {
-	$data = Get-ItemPropertyValue -Path $stateKey -Name $valueName
+	$state = Get-State
 
-	#[Microsoft.Win32.RegistryKey]::Open
+	$state.State = $SetState
 
-	if ($data[18] -eq 0x15)
-	{
-		if ($SetState -eq "On")
-		{
-			exit 0
-		}
-
-		$data[18] = 0x13
-
-		$data = $data[0..22] + $data[25..$data.length] # 43
-	}
-	elseif ($data[18] -eq 0x13)
-	{
-		if ($SetState -eq "Off")
-		{
-			exit 0
-		}
-
-		$data[18] = 0x15
-
-		$data = $data[0..22] + (0x10, 0x00) + $data[23..$data.length] # 41
-	}
-	else
-	{
-		throw "Data corrupted"
-	}
-
-	for ($i = 10; $i -lt 15; $i++)
-	{
-		if ($data[$i] -ne 0xff)
-		{
-			$data[$i]++
-			break
-		}
-	}
-
-	Set-ItemProperty -Path $stateKey -Name $valueName -Value $data
+	Set-State $state
 	
 	exit 0
 }
@@ -168,7 +224,7 @@ class Settings
 	[int]$Temperature
 }
 
-function Get-settings
+function Get-Settings
 {
 	$settings = [Settings]::new()
 
@@ -260,7 +316,7 @@ function Get-settings
 	return $settings
 }
 
-function Set-settings
+function Set-Settings
 {
 	param(
 		[Parameter(Mandatory)]
@@ -431,7 +487,7 @@ if ($SetSchedule -ne $null -or $SetStartTime -ne $null -or $SetEndTime -ne $null
 		throw "Cannot set temperature and strength at the same time. The Night light strength is the temperature converted to a range from 0 to 100"
 	}
 
-	$settings = Get-settings
+	$settings = Get-Settings
 
 	if ($SetSchedule -ne $null)
 	{
@@ -488,7 +544,7 @@ if ($GetState -or $GetSettings)
 
 if ($GetSettings -or $GetSchedule -or $GetStartTime -or $GetStartTime -or $GetEndTime -or $GetTemperature -or $GetStrength)
 {
-	$settings = Get-settings
+	$settings = Get-Settings
 
 	# for ($i = 0; $i -lt $settings.Data.length; $i++)
 	# {

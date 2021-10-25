@@ -5,24 +5,24 @@ param(
 	[Parameter(HelpMessage="Turn Night light on, off or toggle it. If no arguments are given, the Night light will be toggled")]
 	[Alias("State")]
 	[ValidateSet("Toggle", "On", "Off")]
-	[string[]]
+	[string]
 	$SetState=$null,
 
 	[Parameter(HelpMessage="Turn the Night light schedule on, off or toggle it")]
 	[Alias("Schedule")]
 	[ValidateSet("Toggle", "On", "Off")]
-	[string[]]
+	[string]
 	$SetSchedule=$null,
 
 	[Parameter(HelpMessage="Set the start time of the Night light schedule in 'hh:mm'")]
 	[Alias("StartTime")]
-	<# [ValidateScript()] #>
+	[ValidateScript({$_.Days -eq 0 -and $_.Seconds -eq 0 -and $_.Milliseconds -eq 0})]
 	[TimeSpan]
 	$SetStartTime,
 
 	[Parameter(HelpMessage="Set the end time of the Night light schedule in 'hh:mm'")]
 	[Alias("EndTime")]
-	<# [ValidateScript()] #>
+	[ValidateScript({$_.Days -eq 0 -and $_.Seconds -eq 0 -and $_.Milliseconds -eq 0})]
 	[TimeSpan]
 	$SetEndTime,
 
@@ -37,7 +37,6 @@ param(
 	[ValidateRange(0,100)]
 	[int]
 	$SetStrength=-1,
-
 
 
 	[Parameter(HelpMessage="Get all the Night light settings")]
@@ -82,13 +81,13 @@ param(
 	$OpenSettings
 )
 
-[console]::WriteLine("State: ${SetState}")
-[console]::WriteLine("Schedule: ${SetSchedule}")
-[console]::WriteLine("StartTime: {0:hh\:mm}", $SetStartTime)
-[console]::WriteLine("EndTime: {0:hh\:mm}", $SetEndTime)
-[console]::WriteLine("Temperature: ${SetTemperature}")
-[console]::WriteLine("Strength: ${SetStrength}")
-[console]::WriteLine("")
+# [console]::WriteLine("State: ${SetState}")
+# [console]::WriteLine("Schedule: ${SetSchedule}")
+# [console]::WriteLine("StartTime: {0:hh\:mm}", $SetStartTime)
+# [console]::WriteLine("EndTime: {0:hh\:mm}", $SetEndTime)
+# [console]::WriteLine("Temperature: ${SetTemperature}")
+# [console]::WriteLine("Strength: ${SetStrength}")
+# [console]::WriteLine("")
 
 $stateKey = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\default$windows.data.bluelightreduction.bluelightreductionstate\windows.data.bluelightreduction.bluelightreductionstate\'
 $valueName = 'Data'
@@ -491,10 +490,10 @@ if ($GetSettings -or $GetSchedule -or $GetStartTime -or $GetStartTime -or $GetEn
 {
 	$settings = Get-settings
 
-	for ($i = 0; $i -lt $settings.Data.length; $i++)
-	{
-		[console]::WriteLine("data[{0}]: {1:X2}", $i, $settings.Data[$i])
-	}
+	# for ($i = 0; $i -lt $settings.Data.length; $i++)
+	# {
+	# 	[console]::WriteLine("data[{0}]: {1:X2}", $i, $settings.Data[$i])
+	# }
 
 	if ($GetSchedule -or $GetSettings)
 	{

@@ -66,7 +66,20 @@ param(
 
 	[Parameter(HelpMessage="Get the strength of the Night light")]
 	[switch]
-	$GetStrength
+	$GetStrength,
+
+
+	[Parameter(HelpMessage="Delete the state data registry entry")]
+	[switch]
+	$DeleteState,
+
+	[Parameter(HelpMessage="Delete the settings data registry entry")]
+	[switch]
+	$DeleteSettings,
+
+	[Parameter(HelpMessage="Open Windows Settings at the Night light settings")]
+	[switch]
+	$OpenSettings
 )
 
 [console]::WriteLine("State: ${SetState}")
@@ -94,7 +107,10 @@ if (
 	-not $GetStartTime -and 
 	-not $GetEndTime -and 
 	-not $GetTemperature -and 
-	-not $GetStrength
+	-not $GetStrength -and
+	-not $DeleteState -and
+	-not $DeleteSettings -and
+	-not $OpenSettings
 )
 {
 	$data = Get-ItemPropertyValue -Path $stateKey -Name $valueName
@@ -390,6 +406,16 @@ function Set-settings
 	Set-ItemProperty -Path $settingsKey -Name $valueName -Value $settings.Data
 }
 
+if ($DeleteState)
+{
+	Remove-ItemProperty -Path $stateKey -Name $valueName
+}
+
+if ($DeleteSettings)
+{
+	Remove-ItemProperty -Path $settingsKey -Name $valueName
+}
+
 if ($SetSchedule -ne $null -or $SetStartTime -ne $null -or $SetEndTime -ne $null -or $SetTemperature -ne -1 -or $SetStrength -ne -1)
 {
 	if ($SetTemperature -ne -1 -and $SetStrength -ne -1)
@@ -475,4 +501,11 @@ if ($GetSettings -or $GetSchedule -or $GetStartTime -or $GetStartTime -or $GetEn
 	{
 		[console]::WriteLine("Strength: {0}", 100 - [int][math]::floor(($settings.Temperature - 1200) / 53))
 	}
+}
+
+if ($OpenSettings)
+{
+	start "ms-settings:nightlight"
+	# opening the settings once seems to display wrong values...
+	start "ms-settings:nightlight"
 }
